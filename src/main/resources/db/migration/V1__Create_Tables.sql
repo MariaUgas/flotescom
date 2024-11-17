@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE trucks (
+CREATE TABLE IF NOT EXISTS trucks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     license_plate VARCHAR(20) NOT NULL UNIQUE,
     model VARCHAR(100),
@@ -11,7 +11,7 @@ CREATE TABLE trucks (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE loads (
+CREATE TABLE IF NOT EXISTS loads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     truck_id UUID NOT NULL,
     volume DOUBLE PRECISION,
