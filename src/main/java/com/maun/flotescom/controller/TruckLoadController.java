@@ -2,7 +2,9 @@ package com.maun.flotescom.controller;
 
 import java.util.UUID;
 
+import com.maun.flotescom.service.TruckLoadService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,13 +30,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/trucks")
 @Tag(name = "Flotescom", description = "APIs para manejo de camiones y sus cargas")
 public class TruckLoadController {
 	
-	@Autowired
-	private  TruckLoadServiceImpl truckLoadService;
+
+	private TruckLoadService truckLoadService;
 
     @Operation(summary = "Agregando un nuevo camión",
             description = "Ingrese la informacion del nuevo camión")

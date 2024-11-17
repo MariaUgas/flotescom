@@ -3,6 +3,7 @@ package com.maun.flotescom.service.impl;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.maun.flotescom.service.TruckLoadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class TruckLoadServiceImpl  {
+public class TruckLoadServiceImpl implements TruckLoadService {
 	@Autowired
     private TruckRepository truckRepository;
 	@Autowired
