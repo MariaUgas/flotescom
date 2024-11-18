@@ -16,4 +16,5 @@ import reactor.core.publisher.Mono;
 public interface LoadRepository extends ReactiveCrudRepository<Load, UUID> {
 	Flux<Load> findByTruckId(UUID truckId);
     Mono<Load> findByTruckIdAndUnloadTimestampIsNull(UUID truckId);
+    Mono<Void> deleteByTruckId(UUID truckId);
 }

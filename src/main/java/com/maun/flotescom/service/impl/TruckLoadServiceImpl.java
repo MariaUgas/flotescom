@@ -60,7 +60,12 @@ public class TruckLoadServiceImpl implements TruckLoadService {
     }
 
     public Mono<Void> deleteTruck(UUID id) {
-        return truckRepository.deleteById(id);
+        return truckRepository.findById(id)
+                .flatMap(truck ->
+                        loadRepository.deleteByTruckId(id)
+                                .then(truckRepository.deleteById(id))
+                )
+                .switchIfEmpty(Mono.empty());
     }
 
     // Operaciones de carga
