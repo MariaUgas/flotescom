@@ -9,6 +9,7 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 
 @SpringBootApplication
 @Import(OpenApiConfig.class)  // Importa la configuración de OpenAPI
+@EnableR2dbcRepositories( basePackages = "com.maun.flotescom.repository")
 public class FlotescomApplication {
 
 	public static void main(String[] args) {

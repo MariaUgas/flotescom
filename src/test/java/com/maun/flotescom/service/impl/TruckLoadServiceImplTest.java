@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TruckLoadServiceImplTest {
@@ -131,10 +132,25 @@ class TruckLoadServiceImplTest {
 
     @Test
     void deleteTruck_Success() {
-        when(truckRepository.deleteById(testId)).thenReturn(Mono.empty());
+        Truck localTruck=new Truck();
+        localTruck.setId(testId);
+        // Mock findById
+        when(truckRepository.findById(testId))
+                .thenReturn(Mono.just(localTruck));
+
+        // Mock loadRepository deletion
+        when(loadRepository.deleteByTruckId(testId))
+                .thenReturn(Mono.empty());
+
+        // Mock truck deletion
+        when(truckRepository.deleteById(testId))
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(truckLoadService.deleteTruck(testId))
                 .verifyComplete();
+
+        verify(loadRepository).deleteByTruckId(testId);
+        verify(truckRepository).deleteById(testId);
     }
 
     @Test
