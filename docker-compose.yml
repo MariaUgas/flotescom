@@ -16,7 +16,10 @@ services:
       timeout: 5s
       retries: 5
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: flotescom-app:latest
     ports:
       - "8281:8281"
     environment:
