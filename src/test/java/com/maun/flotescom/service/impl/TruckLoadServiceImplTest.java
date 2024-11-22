@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +31,8 @@ class TruckLoadServiceImplTest {
 
     @Mock
     private LoadRepository loadRepository;
+
+    @Mock private NotificationServiceImpl notificationService;
 
     @InjectMocks
     private TruckLoadServiceImpl truckLoadService;
@@ -134,6 +137,7 @@ class TruckLoadServiceImplTest {
     void deleteTruck_Success() {
         Truck localTruck=new Truck();
         localTruck.setId(testId);
+        localTruck.setStatus(TruckStatus.AVAILABLE);
         // Mock findById
         when(truckRepository.findById(testId))
                 .thenReturn(Mono.just(localTruck));
@@ -158,6 +162,7 @@ class TruckLoadServiceImplTest {
         when(truckRepository.findById(testId)).thenReturn(Mono.just(testTruck));
         when(truckRepository.save(any(Truck.class))).thenReturn(Mono.just(testTruck));
         when(loadRepository.save(any(Load.class))).thenReturn(Mono.just(testLoad));
+        when(notificationService.sendNotification(any(UUID.class), anyString())).thenReturn(Mono.empty());
 
         StepVerifier.create(truckLoadService.assignLoad(testId, testLoadRequest))
                 .expectNext(testLoad)

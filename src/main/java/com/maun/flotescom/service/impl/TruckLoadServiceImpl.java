@@ -3,6 +3,7 @@ package com.maun.flotescom.service.impl;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.maun.flotescom.service.NotificationService;
 import com.maun.flotescom.service.TruckLoadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,8 @@ public class TruckLoadServiceImpl implements TruckLoadService {
     private TruckRepository truckRepository;
 	@Autowired
     private LoadRepository loadRepository;
+    @Autowired
+    private NotificationService notificationService;
 
     // Operaciones CRUD para Truck
     public Mono<Truck> createTruck(TruckRequest request) {
@@ -35,8 +38,9 @@ public class TruckLoadServiceImpl implements TruckLoadService {
         truck.setCapacityLimit(request.getCapacityLimit());
         truck.setCurrentLoad(0.0);
         truck.setStatus(TruckStatus.AVAILABLE);
-        
-        return truckRepository.save(truck);
+
+        return truckRepository.save(truck)
+                .doOnSuccess(createdTruck -> log.info("Truck {} created successfully.", createdTruck.getId()));
     }
 
     public Mono<Truck> getTruck(UUID id) {
@@ -52,43 +56,54 @@ public class TruckLoadServiceImpl implements TruckLoadService {
         return truckRepository.findById(id)
             .switchIfEmpty(Mono.error(new RuntimeException("Truck not found")))
             .flatMap(truck -> {
+                validateTruckStatus(truck, TruckStatus.AVAILABLE);
                 truck.setLicensePlate(request.getLicensePlate());
                 truck.setModel(request.getModel());
                 truck.setCapacityLimit(request.getCapacityLimit());
                 return truckRepository.save(truck);
-            });
+            })
+            .doOnSuccess(updatedTruck -> log.info("Truck {} updated successfully.", updatedTruck.getId()));
+
     }
 
     public Mono<Void> deleteTruck(UUID id) {
         return truckRepository.findById(id)
-                .flatMap(truck ->
-                        loadRepository.deleteByTruckId(id)
-                                .then(truckRepository.deleteById(id))
-                )
-                .switchIfEmpty(Mono.empty());
+            .flatMap(truck -> {
+                validateTruckStatus(truck, TruckStatus.AVAILABLE);
+                return loadRepository.deleteByTruckId(id)
+                        .then(truckRepository.deleteById(id));
+            })
+            .switchIfEmpty(Mono.empty())
+            .doOnSuccess(unused -> log.info("Truck {} deleted successfully.", id));
     }
 
     // Operaciones de carga
     public Mono<Load> assignLoad(UUID truckId, LoadRequest request) {
         return truckRepository.findById(truckId)
-            .switchIfEmpty(Mono.error(new RuntimeException("Truck not found")))
-            .filter(truck -> truck.getStatus() == TruckStatus.AVAILABLE)
-            .switchIfEmpty(Mono.error(new RuntimeException("Truck is not available")))
-            .filter(truck -> truck.getCapacityLimit() >= request.getVolume())
-            .switchIfEmpty(Mono.error(new RuntimeException("Load exceeds truck capacity")))
-            .flatMap(truck -> {
-                Load load = new Load();
-                load.setTruckId(truckId);
-                load.setVolume(request.getVolume());
-                load.setDescription(request.getDescription());
-                load.setLoadTimestamp(LocalDateTime.now());
-                
-                truck.setCurrentLoad(request.getVolume());
-                truck.setStatus(TruckStatus.LOADED);
-                
-                return truckRepository.save(truck)
-                    .then(loadRepository.save(load));
-            });
+                .switchIfEmpty(Mono.error(new RuntimeException("Truck not found")))
+                .flatMap(truck -> {
+                    validateTruckStatus(truck, TruckStatus.AVAILABLE);
+                    if (truck.getCapacityLimit() < request.getVolume()) {
+                        throw new RuntimeException("Load exceeds truck capacity");
+                    }
+
+                    Load load = new Load();
+                    load.setTruckId(truckId);
+                    load.setVolume(request.getVolume());
+                    load.setDescription(request.getDescription());
+                    load.setLoadTimestamp(LocalDateTime.now());
+
+                    truck.setCurrentLoad(request.getVolume());
+                    truck.setStatus(TruckStatus.LOADED);
+
+                    return truckRepository.save(truck)
+                            .then(loadRepository.save(load));
+                })
+                .doOnSuccess(load -> {
+                    log.info("Load assigned to truck {} successfully.", truckId);
+                    notificationService.sendNotification(truckId, "Load assigned");  // Notificación
+                });
+
     }
 
     public Mono<Load> unloadTruck(UUID truckId) {
@@ -106,4 +121,10 @@ public class TruckLoadServiceImpl implements TruckLoadService {
                     });
             });
     }
+    private void validateTruckStatus(Truck truck, TruckStatus expectedStatus) {
+        if (truck.getStatus() != expectedStatus) {
+            throw new RuntimeException("Truck is not in the expected state: " + expectedStatus);
+        }
+    }
+
 }
